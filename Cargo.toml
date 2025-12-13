@@ -1,0 +1,7 @@
+[package]
+name = "my_first_projects"
+version = "0.1.0"
+edition = "2024"
+default-run = "my_first_projects"
+
+[dependencies]
