@@ -1,12 +1,17 @@
-use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
 use crate::block::Block;
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Blockchain {
     pub chain: Vec<Block>,
     peers: HashSet<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ChainResponse {
+    chain: Vec<Block>
 }
 
 impl Blockchain {
@@ -70,7 +75,7 @@ impl Blockchain {
         true
     }
 
-    pub fn replace_chain(&mut self, new_chain: Vec<Block>)->bool{
+    pub fn replace_chain(&mut self, new_chain: Vec<Block>) -> bool {
         if new_chain.len() > self.chain.len() {
             if Blockchain::is_chain_valid(&new_chain) {
                 self.chain = new_chain;
@@ -84,15 +89,23 @@ impl Blockchain {
         self.peers.insert(address);
     }
 
-    pub fn resolve_conflicts(&mut self)->bool{
+    pub fn resolve_conflicts(&mut self) -> bool {
         let mut replaced = false;
-        for peer in &self.peers {
+        let peers = self.peers.clone();
+
+        for peer in peers {
             let url = format!("http://{}/", peer);
-            if let Ok(resp) = reqwest::blocking::get(&url){
-                if let Ok(chain) = resp.json::<Vec<Block>>() {
-                    if self.replace_chain(chain){
+            
+            if let Ok(resp) = reqwest::blocking::get(&url) {
+                if let Ok(response_wrapper) = resp.json::<ChainResponse>() {
+                    let chain = response_wrapper.chain;
+                    
+                    if self.replace_chain(chain) {
                         replaced = true;
                     }
+                }
+                else {
+                    println!("Failed to parse response from {}", peer);
                 }
             }
         }

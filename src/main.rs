@@ -55,6 +55,9 @@ fn handle_connection(mut stream: TcpStream, bc: Arc<Mutex<Blockchain>>) {
             .unwrap();
     } else if request.starts_with("GET /resolve") {
         bc.lock().unwrap().resolve_conflicts();
+        stream
+            .write_all(b"HTTP/1.1 200 OK\r\n\r\nChain Resolved")
+            .unwrap();
     } else {
         let bc_data = bc.lock().unwrap();
         let bc_json = serde_json::to_string_pretty(&*bc_data).unwrap();
